@@ -18,8 +18,12 @@ const (
 	ASTERISK = "*"
 	SLASH    = "/"
 
-	LT = "<"
-	GT = ">"
+	LT  = "<"
+	GT  = ">"
+	EQ  = "=="
+	NEQ = "!="
+	LTE = "<="
+	GTE = ">="
 
 	// Delimiters
 	COMMA     = ","
