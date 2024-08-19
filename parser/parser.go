@@ -8,6 +8,27 @@ import (
 	"github.com/Devansh3712/interpreter/token"
 )
 
+const (
+	_ int = iota
+	LOWEST
+	EQUALS
+	// > or <
+	LESSGREATER
+	SUM
+	PRODUCT
+	// -x or !x
+	PREFIX
+	// function(x)
+	CALL
+)
+
+type (
+	prefixParseFn func() ast.Expression
+	// Function argument represents the left side of the
+	// infix operator being parsed
+	infixParseFn func(ast.Expression) ast.Expression
+)
+
 type Parser struct {
 	l *lexer.Lexer
 
@@ -16,6 +37,13 @@ type Parser struct {
 	peekToken token.Token
 
 	errors []string
+
+	// Check if the appropriate map has a parsing function
+	// associated with currToken.Type
+	// All parsing functions do not advance tokens, they're
+	// only associated with currToken
+	prefixParseFns map[token.TokenType]prefixParseFn
+	infixParseFns  map[token.TokenType]infixParseFn
 }
 
 func (p *Parser) nextToken() {
@@ -23,8 +51,26 @@ func (p *Parser) nextToken() {
 	p.peekToken = p.l.NextToken()
 }
 
+func (p *Parser) registerPrefix(tokenType token.TokenType, fn prefixParseFn) {
+	p.prefixParseFns[tokenType] = fn
+}
+
+func (p *Parser) registerInfix(tokenType token.TokenType, fn infixParseFn) {
+	p.infixParseFns[tokenType] = fn
+}
+
+func (p *Parser) parseIdentifier() ast.Expression {
+	return &ast.Identifier{Token: p.currToken, Value: p.currToken.Literal}
+}
+
 func New(l *lexer.Lexer) *Parser {
-	p := &Parser{l: l, errors: []string{}}
+	p := &Parser{
+		l:              l,
+		errors:         []string{},
+		prefixParseFns: make(map[token.TokenType]prefixParseFn),
+	}
+
+	p.registerPrefix(token.IDENT, p.parseIdentifier)
 	// nextToken method is called twice in order to set
 	// both currToken and peekToken as if it run once
 	// only peekToken is set
@@ -85,6 +131,27 @@ func (p *Parser) parseReturnStatement() *ast.ReturnStatement {
 	return statement
 }
 
+func (p *Parser) parseExpression(precedence int) ast.Expression {
+	prefix := p.prefixParseFns[p.currToken.Type]
+	if prefix == nil {
+		return nil
+	}
+	leftExp := prefix()
+	return leftExp
+}
+
+func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
+	statement := &ast.ExpressionStatement{Token: p.currToken}
+	statement.Expression = p.parseExpression(LOWEST)
+
+	// Semicolon is optional (for REPL)
+	if p.peekTokenIs(token.SEMICOLON) {
+		p.nextToken()
+	}
+
+	return statement
+}
+
 func (p *Parser) parseStatement() ast.Statement {
 	switch p.currToken.Type {
 	case token.LET:
@@ -92,7 +159,7 @@ func (p *Parser) parseStatement() ast.Statement {
 	case token.RETURN:
 		return p.parseReturnStatement()
 	default:
-		return nil
+		return p.parseExpressionStatement()
 	}
 }
 
