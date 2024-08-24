@@ -113,6 +113,10 @@ func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
 	return expression
 }
 
+func (p *Parser) parseBoolean() ast.Expression {
+	return &ast.Boolean{Token: p.currToken, Value: p.currTokenIs(token.TRUE)}
+}
+
 func New(l *lexer.Lexer) *Parser {
 	p := &Parser{
 		l:              l,
@@ -121,21 +125,33 @@ func New(l *lexer.Lexer) *Parser {
 		infixParseFns:  make(map[token.TokenType]infixParseFn),
 	}
 
-	p.registerPrefix(token.IDENT, p.parseIdentifier)
-	p.registerPrefix(token.INT, p.parseIntegerLiteral)
-	p.registerPrefix(token.BANG, p.parsePrefixExpression)
-	p.registerPrefix(token.MINUS, p.parsePrefixExpression)
+	prefixFns := map[token.TokenType]prefixParseFn{
+		token.IDENT: p.parseIdentifier,
+		token.INT:   p.parseIntegerLiteral,
+		token.BANG:  p.parsePrefixExpression,
+		token.MINUS: p.parsePrefixExpression,
+		token.TRUE:  p.parseBoolean,
+		token.FALSE: p.parseBoolean,
+	}
+	for token, fn := range prefixFns {
+		p.registerPrefix(token, fn)
+	}
 
-	p.registerInfix(token.PLUS, p.parseInfixExpression)
-	p.registerInfix(token.MINUS, p.parseInfixExpression)
-	p.registerInfix(token.ASTERISK, p.parseInfixExpression)
-	p.registerInfix(token.SLASH, p.parseInfixExpression)
-	p.registerInfix(token.EQ, p.parseInfixExpression)
-	p.registerInfix(token.NEQ, p.parseInfixExpression)
-	p.registerInfix(token.LT, p.parseInfixExpression)
-	p.registerInfix(token.GT, p.parseInfixExpression)
-	p.registerInfix(token.LTE, p.parseInfixExpression)
-	p.registerInfix(token.GTE, p.parseInfixExpression)
+	infixFns := []token.TokenType{
+		token.PLUS,
+		token.MINUS,
+		token.ASTERISK,
+		token.SLASH,
+		token.EQ,
+		token.NEQ,
+		token.LT,
+		token.GT,
+		token.LTE,
+		token.GTE,
+	}
+	for _, token := range infixFns {
+		p.registerInfix(token, p.parseInfixExpression)
+	}
 	// nextToken method is called twice in order to set
 	// both currToken and peekToken as if it run once
 	// only peekToken is set
