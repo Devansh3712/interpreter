@@ -117,6 +117,17 @@ func (p *Parser) parseBoolean() ast.Expression {
 	return &ast.Boolean{Token: p.currToken, Value: p.currTokenIs(token.TRUE)}
 }
 
+func (p *Parser) parseGroupedExpression() ast.Expression {
+	p.nextToken()
+
+	expression := p.parseExpression(LOWEST)
+	if !p.expectPeek(token.RPAREN) {
+		return nil
+	}
+
+	return expression
+}
+
 func New(l *lexer.Lexer) *Parser {
 	p := &Parser{
 		l:              l,
@@ -126,12 +137,13 @@ func New(l *lexer.Lexer) *Parser {
 	}
 
 	prefixFns := map[token.TokenType]prefixParseFn{
-		token.IDENT: p.parseIdentifier,
-		token.INT:   p.parseIntegerLiteral,
-		token.BANG:  p.parsePrefixExpression,
-		token.MINUS: p.parsePrefixExpression,
-		token.TRUE:  p.parseBoolean,
-		token.FALSE: p.parseBoolean,
+		token.IDENT:  p.parseIdentifier,
+		token.INT:    p.parseIntegerLiteral,
+		token.BANG:   p.parsePrefixExpression,
+		token.MINUS:  p.parsePrefixExpression,
+		token.TRUE:   p.parseBoolean,
+		token.FALSE:  p.parseBoolean,
+		token.LPAREN: p.parseGroupedExpression,
 	}
 	for token, fn := range prefixFns {
 		p.registerPrefix(token, fn)
