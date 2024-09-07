@@ -34,6 +34,7 @@ var precedences = map[token.TokenType]int{
 	token.MINUS:    SUM,
 	token.ASTERISK: PRODUCT,
 	token.SLASH:    PRODUCT,
+	token.LPAREN:   CALL,
 }
 
 type (
@@ -217,6 +218,36 @@ func (p *Parser) parseFunctionLiteral() ast.Expression {
 	return literal
 }
 
+func (p *Parser) parseCallArguments() []ast.Expression {
+	args := []ast.Expression{}
+
+	if p.peekTokenIs(token.RPAREN) {
+		p.nextToken()
+		return args
+	}
+
+	p.nextToken()
+	args = append(args, p.parseExpression(LOWEST))
+
+	for p.peekTokenIs(token.COMMA) {
+		p.nextToken()
+		p.nextToken()
+		args = append(args, p.parseExpression(LOWEST))
+	}
+
+	if !p.expectPeek(token.RPAREN) {
+		return nil
+	}
+
+	return args
+}
+
+func (p *Parser) parseCallExpression(function ast.Expression) ast.Expression {
+	expression := &ast.CallExpression{Token: p.currToken, Function: function}
+	expression.Arguments = p.parseCallArguments()
+	return expression
+}
+
 func New(l *lexer.Lexer) *Parser {
 	p := &Parser{
 		l:              l,
@@ -255,6 +286,7 @@ func New(l *lexer.Lexer) *Parser {
 	for _, token := range infixFns {
 		p.registerInfix(token, p.parseInfixExpression)
 	}
+	p.registerInfix(token.LPAREN, p.parseCallExpression)
 	// nextToken method is called twice in order to set
 	// both currToken and peekToken as if it run once
 	// only peekToken is set
