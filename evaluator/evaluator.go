@@ -5,6 +5,14 @@ import (
 	"github.com/Devansh3712/interpreter/object"
 )
 
+var (
+	// Boolean can have only 2 values, new instances are
+	// not required to be created every time
+	TRUE  = &object.Boolean{Value: true}
+	FALSE = &object.Boolean{Value: false}
+	NULL  = &object.Null{}
+)
+
 func evalStatements(statements []ast.Statement) object.Object {
 	var result object.Object
 
@@ -25,6 +33,11 @@ func Eval(node ast.Node) object.Object {
 	// Expressions
 	case *ast.IntegerLiteral:
 		return &object.Integer{Value: node.Value}
+	case *ast.Boolean:
+		if node.Value {
+			return TRUE
+		}
+		return FALSE
 	}
 
 	return nil
