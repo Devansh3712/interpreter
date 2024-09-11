@@ -11,6 +11,7 @@ const (
 	INT   = "INT"
 
 	// Operators
+	// TODO: Add modulus operator
 	ASSIGN   = "="
 	PLUS     = "+"
 	MINUS    = "-"

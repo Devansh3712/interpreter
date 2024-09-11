@@ -23,6 +23,13 @@ func evalStatements(statements []ast.Statement) object.Object {
 	return result
 }
 
+func boolToBooleanObject(input bool) *object.Boolean {
+	if input {
+		return TRUE
+	}
+	return FALSE
+}
+
 func evalBangOperatorExpression(right object.Object) object.Object {
 	switch right {
 	case TRUE:
@@ -68,6 +75,18 @@ func evalIntegerInfixExpression(operator string, left, right object.Object) obje
 		return &object.Integer{Value: leftVal * rightVal}
 	case "/":
 		return &object.Integer{Value: leftVal / rightVal}
+	case "<":
+		return boolToBooleanObject(leftVal < rightVal)
+	case ">":
+		return boolToBooleanObject(leftVal > rightVal)
+	case "<=":
+		return boolToBooleanObject(leftVal <= rightVal)
+	case ">=":
+		return boolToBooleanObject(leftVal >= rightVal)
+	case "==":
+		return boolToBooleanObject(leftVal == rightVal)
+	case "!=":
+		return boolToBooleanObject(leftVal != rightVal)
 	default:
 		return NULL
 	}
@@ -77,6 +96,12 @@ func evalInfixExpression(operator string, left, right object.Object) object.Obje
 	switch {
 	case left.Type() == object.INTEGER_OBJ && right.Type() == object.INTEGER_OBJ:
 		return evalIntegerInfixExpression(operator, left, right)
+	// Using pointers for objects and in case of booleans we
+	// only have TRUE and FALSE
+	case operator == "==":
+		return boolToBooleanObject(left == right)
+	case operator == "!=":
+		return boolToBooleanObject(left != right)
 	default:
 		return NULL
 	}
@@ -93,10 +118,7 @@ func Eval(node ast.Node) object.Object {
 	case *ast.IntegerLiteral:
 		return &object.Integer{Value: node.Value}
 	case *ast.Boolean:
-		if node.Value {
-			return TRUE
-		}
-		return FALSE
+		return boolToBooleanObject(node.Value)
 	case *ast.PrefixExpression:
 		right := Eval(node.Right)
 		return evalPrefixExpression(node.Operator, right)
