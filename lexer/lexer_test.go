@@ -29,6 +29,9 @@ if (5 < 10) {
 10 != 9;
 10 >= 2;
 1 <= 10;
+"secctan"
+"10/02/2004"
+"hello world"
 `
 
 	tests := []struct {
@@ -116,6 +119,9 @@ if (5 < 10) {
 		{token.LTE, "<="},
 		{token.INT, "10"},
 		{token.SEMICOLON, ";"},
+		{token.STRING, "secctan"},
+		{token.STRING, "10/02/2004"},
+		{token.STRING, "hello world"},
 		{token.EOF, ""},
 	}
 
