@@ -248,6 +248,10 @@ func (p *Parser) parseCallExpression(function ast.Expression) ast.Expression {
 	return expression
 }
 
+func (p *Parser) parseStringLiteral() ast.Expression {
+	return &ast.StringLiteral{Token: p.currToken, Value: p.currToken.Literal}
+}
+
 func New(l *lexer.Lexer) *Parser {
 	p := &Parser{
 		l:              l,
@@ -266,6 +270,7 @@ func New(l *lexer.Lexer) *Parser {
 		token.LPAREN:   p.parseGroupedExpression,
 		token.IF:       p.parseIfExpression,
 		token.FUNCTION: p.parseFunctionLiteral,
+		token.STRING:   p.parseStringLiteral,
 	}
 	for token, fn := range prefixFns {
 		p.registerPrefix(token, fn)
